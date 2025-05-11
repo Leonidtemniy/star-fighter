@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import MainScene from './scenes/MainScene';
+import MainMenuScene from './scenes/MainMenuScene';
+import GameOverScene from './scenes/GameOverScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -14,10 +16,10 @@ const config: Phaser.Types.Core.GameConfig = {
     }
   },
   scale: {
-    mode: Phaser.Scale.FIT, // Подгоняет игру под размер экрана
-    autoCenter: Phaser.Scale.CENTER_BOTH // Центрирует по горизонтали и вертикали
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH
   },
-  scene: [MainScene]
+  scene: [MainMenuScene, MainScene, GameOverScene] // порядок важен
 };
 
 new Phaser.Game(config);
