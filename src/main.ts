@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import MainScene from './scenes/MainScene';
 import MainMenuScene from './scenes/MainMenuScene';
 import GameOverScene from './scenes/GameOverScene';
+import './app.css';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,

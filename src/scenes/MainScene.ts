@@ -118,7 +118,7 @@ export default class MainScene extends Phaser.Scene {
       (
         bullet: Phaser.GameObjects.GameObject | Phaser.Types.Physics.Arcade.GameObjectWithBody,
         enemy: Phaser.GameObjects.GameObject | Phaser.Types.Physics.Arcade.GameObjectWithBody
-      ) => {
+      ): ThisParameterType => {
         const bulletSprite = bullet as Phaser.Physics.Arcade.Image;
         const enemySprite = enemy as Phaser.Physics.Arcade.Sprite;
 

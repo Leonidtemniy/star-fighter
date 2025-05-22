@@ -40,3 +40,16 @@
 .read-the-docs {
   color: #888;
 }
+.player-name-input {
+  position: absolute;
+  margin-bottom: 10vh;
+  width: 200px;
+  font-size: 18px;
+  padding: 8px;
+  border: 2px solid green;
+  border-radius: 4px;
+  background-color: #000;
+  color: #fff;
+  outline: none;
+  z-index: 1000;
+}

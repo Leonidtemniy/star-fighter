@@ -1,26 +1,45 @@
 import Phaser from 'phaser';
 import globals from '../globals';
 
+interface StarGraphic extends Phaser.GameObjects.Graphics {
+  speed: number;
+}
+
 export default class MainMenuScene extends Phaser.Scene {
   private playerNameInput!: HTMLInputElement;
   private startButton!: Phaser.GameObjects.Text;
+  private stars: StarGraphic[] = [];
+  private maxStars = 100;
 
   constructor() {
     super('MainMenuScene');
   }
 
   preload() {
-    // Загружаем музыку
     this.load.audio('backgroundMusic', 'assets/audio/music.mp3');
-
-    //  Обеспечиваем корректный запуск звука по пользовательскому взаимодействию
     this.input.once('pointerdown', this.initAudioContext, this);
   }
 
   create() {
     const { width, height } = this.scale;
 
-    //  Запускаем фоновую музыку
+    // --- ЗВЁЗДЫ ---
+    for (let i = 0; i < this.maxStars; i++) {
+      const x = Phaser.Math.Between(0, width);
+      const y = Phaser.Math.Between(0, height);
+      const star = this.add.graphics({ x, y }) as StarGraphic;
+
+      const size = Phaser.Math.FloatBetween(1, 2);
+      const alpha = Phaser.Math.FloatBetween(0.3, 1);
+
+      star.fillStyle(0xffffff, alpha);
+      star.fillCircle(0, 0, size);
+      star.speed = Phaser.Math.FloatBetween(0.2, 1.2);
+
+      this.stars.push(star);
+    }
+
+    // --- МУЗЫКА ---
     if (!globals.backgroundMusic) {
       globals.backgroundMusic = this.sound.add('backgroundMusic', {
         loop: true,
@@ -28,9 +47,9 @@ export default class MainMenuScene extends Phaser.Scene {
       });
       globals.backgroundMusic.play();
     }
-
     this.sound.pauseOnBlur = false;
 
+    // --- ЗАГОЛОВОК ---
     this.add
       .text(width / 2, 100, 'STAR FIGHTER', {
         fontSize: '48px',
@@ -38,18 +57,14 @@ export default class MainMenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    // --- HTML input ---
     this.playerNameInput = document.createElement('input');
     this.playerNameInput.type = 'text';
     this.playerNameInput.placeholder = 'Ваше имя';
-    this.playerNameInput.style.position = 'absolute';
-    this.playerNameInput.style.top = `${height / 2 - 20}px`;
-    this.playerNameInput.style.left = `${width / 2 - 100}px`;
-    this.playerNameInput.style.width = '200px';
-    this.playerNameInput.style.fontSize = '18px';
-    this.playerNameInput.style.padding = '8px';
-    this.playerNameInput.maxLength = 20;
+    this.playerNameInput.className = 'player-name-input';
     document.body.appendChild(this.playerNameInput);
 
+    // --- КНОПКА СТАРТА ---
     this.startButton = this.add
       .text(width / 2, height / 2 + 50, 'СТАРТ', {
         fontSize: '28px',
@@ -71,8 +86,17 @@ export default class MainMenuScene extends Phaser.Scene {
       });
   }
 
+  update() {
+    for (const star of this.stars) {
+      star.y += star.speed;
+      if (star.y > this.scale.height) {
+        star.y = 0;
+        star.x = Phaser.Math.Between(0, this.scale.width);
+      }
+    }
+  }
+
   initAudioContext() {
-    // 💡 Проверяем, действительно ли sound — это WebAudioSoundManager
     if (this.sound instanceof Phaser.Sound.WebAudioSoundManager) {
       if (this.sound.context.state === 'suspended') {
         this.sound.context.resume().then(() => {
