@@ -33,6 +33,6 @@ git clone https://github.com/Leonidtemniy/star-fighter.git
 
 3. **Запустите проект:**
 
-- npm run dev
+- npx ts-node server.ts (сервер)
 
-## MIT License — свободное использование с сохранением авторства.
+- npm run dev (игра)

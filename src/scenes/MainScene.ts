@@ -112,18 +112,15 @@ export default class MainScene extends Phaser.Scene {
     });
 
     // ===== ОБРАБОТКА СТОЛКНОВЕНИЙ =====
+    // ===== ОБРАБОТКА СТОЛКНОВЕНИЙ =====
     this.physics.add.overlap(
       this.bullets,
       this.enemies,
-      (
-        bullet: Phaser.GameObjects.GameObject | Phaser.Types.Physics.Arcade.GameObjectWithBody,
-        enemy: Phaser.GameObjects.GameObject | Phaser.Types.Physics.Arcade.GameObjectWithBody
-      ): ThisParameterType => {
+      (bullet, enemy) => {
         const bulletSprite = bullet as Phaser.Physics.Arcade.Image;
         const enemySprite = enemy as Phaser.Physics.Arcade.Sprite;
 
         if (bulletSprite.active && enemySprite.active) {
-          // Деактивируем объекты при столкновении
           bulletSprite.disableBody(true, true);
           enemySprite.disableBody(true, true);
           this.updateScore(); // Увеличиваем счет
@@ -220,18 +217,27 @@ export default class MainScene extends Phaser.Scene {
   /**
    * Создание и выстрел пули
    */
+  /**
+   * Создание и выстрел пули
+   */
   private fireBullet() {
     const bullet = this.bullets.get(
       this.player.x,
-      this.player.y - 20, // Чуть выше игрока
+      this.player.y - 20,
       'bullet'
     ) as Phaser.Physics.Arcade.Image;
 
     if (bullet) {
       bullet.setActive(true);
       bullet.setVisible(true);
+      bullet.enableBody(true, this.player.x, this.player.y - 20, true, true); // Принудительно активируем физику
+
       bullet.setVelocityY(-400); // Движение вверх
       bullet.setScale(0.5); // Уменьшенный размер
+
+      // Чтобы избежать зависания пули внизу экрана
+      bullet.setCollideWorldBounds(false);
+      bullet.setGravityY(0);
     }
   }
 

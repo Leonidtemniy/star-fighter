@@ -53,7 +53,15 @@ export default class MainMenuScene extends Phaser.Scene {
     this.add
       .text(width / 2, 100, 'STAR FIGHTER', {
         fontSize: '48px',
-        color: '#ffffff'
+        fontFamily: 'Arial',
+        color: '#ffffff',
+        shadow: {
+          offsetX: 2,
+          offsetY: 2,
+          color: 'green',
+          blur: 6,
+          fill: true
+        }
       })
       .setOrigin(0.5);
 
