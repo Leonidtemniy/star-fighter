@@ -1,4 +1,3 @@
-// src/scenes/GameOverScene.ts
 import Phaser from 'phaser';
 
 export default class GameOverScene extends Phaser.Scene {
@@ -14,45 +13,77 @@ export default class GameOverScene extends Phaser.Scene {
     this.playerName = data.playerName;
   }
 
-  preload() {
-    // Здесь можно загрузить фоны, музыку, кнопки
-  }
-
   create() {
-    const { width } = this.scale;
+    const { width, height } = this.scale;
 
-    this.add.text(width / 2, 100, 'ИГРА ОКОНЧЕНА', {
-      fontSize: '48px',
-      color: '#ff5555',
-    }).setOrigin(0.5);
+    // Темный фон
+    this.add.rectangle(0, 0, width, height, 0x000000, 0.7).setOrigin(0);
 
-    this.add.text(width / 2, 180, `Игрок: ${this.playerName}`, {
-      fontSize: '24px',
-      color: '#ffffff',
-    }).setOrigin(0.5);
+    // Тексты
+    this.add
+      .text(width / 2, height / 3, 'ИГРА ОКОНЧЕНА', {
+        fontSize: '64px',
+        color: '#ff5555',
+        fontStyle: 'bold'
+      })
+      .setOrigin(0.5);
 
-    this.add.text(width / 2, 220, `Очки: ${this.finalScore}`, {
-      fontSize: '24px',
-      color: '#ffffff',
-    }).setOrigin(0.5);
+    this.add
+      .text(width / 2, height / 2 - 50, `Игрок: ${this.playerName}`, {
+        fontSize: '32px',
+        color: '#ffffff'
+      })
+      .setOrigin(0.5);
 
-  
+    this.add
+      .text(width / 2, height / 2, `Результат: ${this.finalScore}`, {
+        fontSize: '32px',
+        color: '#ffffff'
+      })
+      .setOrigin(0.5);
 
-    // Отправка результата в базу
-    this.saveScore(this.playerName, this.finalScore);
+    // Кнопка возврата
+    const menuButton = this.add
+      .text(width / 2, (height * 2) / 3, 'ГЛАВНОЕ МЕНЮ', {
+        fontSize: '32px',
+        color: '#000000',
+        backgroundColor: '#00ff99',
+        padding: { x: 20, y: 10 },
+        fontStyle: 'bold'
+      })
+      .setOrigin(0.5)
+      .setInteractive();
+
+    menuButton.on('pointerover', () => {
+      menuButton.setBackgroundColor('#00cc77');
+    });
+
+    menuButton.on('pointerout', () => {
+      menuButton.setBackgroundColor('#00ff99');
+    });
+
+    menuButton.on('pointerdown', () => {
+      this.scene.start('MainMenuScene');
+    });
+
+    // Сохранение результата
+    this.saveScore();
   }
 
-  private async saveScore(name: string, score: number) {
+  private async saveScore() {
     try {
-      await fetch('http://localhost:3000/api/scores', {
+      await fetch('http://localhost:3001/save-score', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ name, score }),
+        body: JSON.stringify({
+          name: this.playerName,
+          score: this.finalScore
+        })
       });
     } catch (err) {
-      console.error('Ошибка при сохранении результата:', err);
+      console.error('Ошибка сохранения:', err);
     }
   }
 }

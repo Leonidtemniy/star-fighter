@@ -10,6 +10,8 @@ export default class MainMenuScene extends Phaser.Scene {
   private startButton!: Phaser.GameObjects.Text;
   private stars: StarGraphic[] = [];
   private maxStars = 100;
+  private leaderboardText!: Phaser.GameObjects.Text;
+  private leaderboardData: Array<{ name: string; score: number }> = [];
 
   constructor() {
     super('MainMenuScene');
@@ -92,6 +94,74 @@ export default class MainMenuScene extends Phaser.Scene {
         document.body.removeChild(this.playerNameInput);
         this.scene.start('MainScene', { playerName });
       });
+
+    // --- ТАБЛИЦА ЛИДЕРОВ ---
+    this.createLeaderboard();
+    this.loadLeaderboard();
+  }
+
+  private createLeaderboard() {
+    const { width } = this.scale;
+
+    // Фон для рейтинга
+    this.add.rectangle(width - 200, 160, 220, 160, 0x000000, 0.6).setOrigin(0.5, 0);
+
+    // Заголовок
+    this.add
+      .text(width - 200, 130, 'ТОП ИГРОКОВ', {
+        fontSize: '24px',
+        color: 'white',
+        fontStyle: 'bold',
+        shadow: {
+          offsetX: 2,
+          offsetY: 2,
+          color: 'green',
+          blur: 6,
+          fill: true
+        }
+      })
+      .setOrigin(0.5);
+
+    // Поле для вывода рейтинга
+    this.leaderboardText = this.add
+      .text(width - 200, 160, 'Загрузка...', {
+        fontSize: '18px',
+        color: '#ffffff',
+        wordWrap: { width: 180 },
+        lineSpacing: 10
+      })
+      .setOrigin(0.5, 0);
+  }
+
+  async loadLeaderboard() {
+    try {
+      const response = await fetch('http://localhost:3001/leaderboard');
+      if (!response.ok) throw new Error('Ошибка сервера');
+
+      const data = await response.json();
+      console.log('Получен рейтинг:', data);
+
+      // здесь можешь вывести данные на экран
+    } catch (error) {
+      console.error('Ошибка загрузки рейтинга:', error);
+    }
+  }
+
+  private updateLeaderboard() {
+    if (this.leaderboardData.length === 0) {
+      this.leaderboardText.setText('Нет данных\nо рейтинге');
+      return;
+    }
+
+    let leaderboardString = '';
+    const sorted = [...this.leaderboardData].sort((a, b) => b.score - a.score);
+
+    sorted.slice(0, 5).forEach((player, index) => {
+      const medal = ['🥇', '🥈', '🥉'][index] || '▫️';
+      leaderboardString += `${medal} ${player.name}: [color=#00ff00]${player.score}[/color]\n`;
+    });
+
+    this.leaderboardText.setText(leaderboardString);
   }
 
   update() {

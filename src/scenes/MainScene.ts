@@ -1,136 +1,151 @@
 import Phaser from 'phaser';
+import { fireBullet } from '../entities/Bullet';
+import { spawnEnemy } from '../entities/Enemy';
+import { spawnAsteroid } from '../entities/Asteroid';
+import { BlackHole } from '../entities/BlackHole';
 
-/**
- * Главная игровая сцена
- * @class MainScene
- * @extends Phaser.Scene
- */
 export default class MainScene extends Phaser.Scene {
-  // Фоновые изображения с параллакс-эффектом
   private backgroundFar!: Phaser.GameObjects.TileSprite;
   private backgroundNear!: Phaser.GameObjects.TileSprite;
-
-  // Игрок
   private player!: Phaser.Physics.Arcade.Sprite;
+  private blackHole!: BlackHole;
 
-  // Управление
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private spaceKey!: Phaser.Input.Keyboard.Key;
 
-  // Группы объектов
-  private bullets!: Phaser.Physics.Arcade.Group; // Группа пуль
-  private enemies!: Phaser.Physics.Arcade.Group; // Группа врагов
+  private bullets!: Phaser.Physics.Arcade.Group;
+  private enemies!: Phaser.Physics.Arcade.Group;
+  private asteroids!: Phaser.Physics.Arcade.Group;
 
-  // Скорости движения фона
   private backgroundFarSpeedY = 0.1;
   private backgroundNearSpeedY = 0.5;
 
-  // Игровая статистика
   private playerName: string;
   private score: number;
   private bestScore: number;
   private timeElapsed: number;
 
-  // Текстовые элементы UI
   private playerNameText!: Phaser.GameObjects.Text;
   private scoreText!: Phaser.GameObjects.Text;
   private bestScoreText!: Phaser.GameObjects.Text;
   private timeText!: Phaser.GameObjects.Text;
 
-  // Таймер стрельбы
   private lastFired = 0;
 
   constructor() {
     super('MainScene');
-    // Инициализация игровых переменных
     this.playerName = '';
     this.score = 0;
     this.bestScore = 0;
     this.timeElapsed = 0;
   }
 
-  /**
-   * Инициализация сцены
-   * @param data - Объект с данными для инициализации
-   */
   init(data: { playerName: string }) {
     this.playerName = data.playerName || 'Игрок';
     this.bestScore = parseInt(localStorage.getItem('bestScore') || '0', 10);
   }
 
-  /**
-   * Загрузка ресурсов
-   */
   preload() {
-    // Загрузка изображений
-    this.load.image('backgroundFar', '/assets/backgroundFar.png');
-    this.load.image('backgroundNear', '/assets/backgroundNear.png');
-    this.load.image('player', '/assets/player.png');
-    this.load.image('bullet', '/assets/bullet.png');
-    this.load.image('enemy', '/assets/enemy.png');
+    this.load.image('backgroundFar', 'assets/backgroundFar.png');
+    this.load.image('backgroundNear', 'assets/backgroundNear.png');
+    this.load.image('player', 'assets/player.png');
+    this.load.image('bullet', 'assets/bullet.png');
+    this.load.image('enemy', 'assets/enemy.png');
+    this.load.image('asteroid', 'assets/asteroid.png');
+    this.load.image('blackhole', 'assets/blackhole.png');
+    this.load.spritesheet('blackhole', 'assets/blackhole.png', {
+      frameWidth: 10,
+      frameHeight: 10
+    });
   }
 
-  /**
-   * Создание игровых объектов
-   */
   create() {
     const { width, height } = this.scale;
 
-    // ===== СОЗДАНИЕ ФОНА =====
+    // Фон
     this.backgroundFar = this.add
       .tileSprite(0, 0, width, height, 'backgroundFar')
       .setOrigin(0, 0)
-      .setTint(0x800080); // Фиолетовый оттенок
+      .setTint(0x800080);
 
     this.backgroundNear = this.add
       .tileSprite(0, 0, width, height, 'backgroundNear')
       .setOrigin(0, 0)
-      .setAlpha(0.4); // Полупрозрачный
+      .setAlpha(0.4);
 
-    // ===== СОЗДАНИЕ ИГРОКА =====
+    // Игрок
     this.player = this.physics.add.sprite(width / 2, height - 100, 'player');
-    this.player.setCollideWorldBounds(true); // Не выходит за границы экрана
+    this.player.setCollideWorldBounds(true);
 
-    // ===== НАСТРОЙКА УПРАВЛЕНИЯ =====
+    // Управление
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.spaceKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
-    // ===== СОЗДАНИЕ ГРУПП ОБЪЕКТОВ =====
+    // Группы объектов
     this.bullets = this.physics.add.group({
       classType: Phaser.Physics.Arcade.Image,
-      runChildUpdate: true // Автоматическое обновление детей
+      runChildUpdate: true
     });
 
     this.enemies = this.physics.add.group();
+    this.asteroids = this.physics.add.group();
 
-    // ===== ТАЙМЕР ПОЯВЛЕНИЯ ВРАГОВ =====
+    // Черная дыра
+    this.blackHole = new BlackHole(this, width / 2, height / 2);
+
+    // Спавн врагов
     this.time.addEvent({
-      delay: 1000, // Каждую секунду
-      callback: this.spawnEnemy,
+      delay: 1000,
+      callback: () => spawnEnemy(this, this.enemies),
       callbackScope: this,
       loop: true
     });
 
-    // ===== ОБРАБОТКА СТОЛКНОВЕНИЙ =====
-    // ===== ОБРАБОТКА СТОЛКНОВЕНИЙ =====
-    this.physics.add.overlap(
-      this.bullets,
-      this.enemies,
-      (bullet, enemy) => {
-        const bulletSprite = bullet as Phaser.Physics.Arcade.Image;
-        const enemySprite = enemy as Phaser.Physics.Arcade.Sprite;
+    // Спавн астероидов
+    this.time.addEvent({
+      delay: 2000,
+      callback: () => spawnAsteroid(this, this.asteroids),
+      loop: true
+    });
 
-        if (bulletSprite.active && enemySprite.active) {
-          bulletSprite.disableBody(true, true);
-          enemySprite.disableBody(true, true);
-          this.updateScore(); // Увеличиваем счет
-        }
-      },
-      undefined,
-      this
-    );
+    // Коллизии
+    this.physics.add.overlap(this.bullets, this.enemies, (bullet, enemy) => {
+      bullet.destroy();
+      enemy.destroy();
+      this.updateScore();
+    });
 
-    // ===== СОЗДАНИЕ ИНТЕРФЕЙСА =====
+    this.physics.add.overlap(this.player, this.asteroids, () => {
+      this.gameOver();
+    });
+
+    this.physics.add.overlap(this.blackHole, this.enemies, (_, enemy) => {
+      enemy.destroy();
+    });
+
+    this.physics.add.overlap(this.blackHole, this.asteroids, (_, asteroid) => {
+      asteroid.destroy();
+    });
+
+    this.physics.add.overlap(this.player, this.blackHole, () => {
+      this.gameOver();
+    });
+
+    // UI
+    this.createUI();
+
+    // Анимация черной дыры (если есть)
+    this.anims.create({
+      key: 'blackhole-idle',
+      frames: this.anims.generateFrameNumbers('blackhole', { start: 0, end: 7 }),
+      frameRate: 10,
+      repeat: -1
+    });
+  }
+
+  private createUI() {
+    const { width } = this.scale;
+
     this.playerNameText = this.add.text(width - 200, 10, `Игрок: ${this.playerName}`, {
       fontSize: '18px',
       color: '#ffffff'
@@ -141,119 +156,66 @@ export default class MainScene extends Phaser.Scene {
       color: '#ffffff'
     });
 
-    this.bestScoreText = this.add.text(width - 200, 70, `Лучший результат: ${this.bestScore}`, {
+    this.bestScoreText = this.add.text(width - 200, 70, `Лучший: ${this.bestScore}`, {
       fontSize: '18px',
       color: '#ffffff'
     });
 
-    this.timeText = this.add.text(width - 200, 100, `Время: 0:00`, {
+    this.timeText = this.add.text(width - 200, 100, `Время: 00:00`, {
       fontSize: '18px',
       color: '#ffffff'
     });
 
-    // ===== ТАЙМЕР ИГРОВОГО ВРЕМЕНИ =====
-    this.timeElapsed = 0;
     this.time.addEvent({
-      delay: 1000, // Каждую секунду
+      delay: 1000,
       callback: this.updateTime,
       callbackScope: this,
       loop: true
     });
   }
 
-  /**
-   * Основной игровой цикл
-   * @param time - Текущее игровое время
-   */
   update(time: number) {
-    // ===== ДВИЖЕНИЕ ФОНА (ПАРАЛЛАКС) =====
+    // Параллакс
     const playerSpeedX = this.player.body?.velocity.x || 0;
     this.backgroundFar.tilePositionX += playerSpeedX * 0.001;
     this.backgroundNear.tilePositionX += playerSpeedX * 0.002;
     this.backgroundFar.tilePositionY -= this.backgroundFarSpeedY;
     this.backgroundNear.tilePositionY -= this.backgroundNearSpeedY;
 
-    // ===== УПРАВЛЕНИЕ ИГРОКОМ =====
-    // Горизонтальное движение
-    if (this.cursors.left?.isDown) {
-      this.player.setVelocityX(-300);
-      this.player.setAngle(-10); // Наклон влево
-    } else if (this.cursors.right?.isDown) {
-      this.player.setVelocityX(300);
-      this.player.setAngle(10); // Наклон вправо
+    // Управление
+    this.handlePlayerMovement();
+
+    // Стрельба
+    if (this.spaceKey.isDown && time > this.lastFired) {
+      fireBullet(this, this.bullets, this.player);
+      this.lastFired = time + 250;
+    }
+
+    // Притягиваем объекты к черной дыре
+    this.blackHole.attract([
+      ...(this.enemies.getChildren() as Phaser.Physics.Arcade.Sprite[]),
+      ...(this.asteroids.getChildren() as Phaser.Physics.Arcade.Sprite[])
+    ]);
+  }
+
+  private handlePlayerMovement() {
+    if (this.cursors.left.isDown) {
+      this.player.setVelocityX(-300).setAngle(-10);
+    } else if (this.cursors.right.isDown) {
+      this.player.setVelocityX(300).setAngle(10);
     } else {
-      this.player.setVelocityX(0);
+      this.player.setVelocityX(0).setAngle(0);
     }
 
-    // Вертикальное движение
-    if (this.cursors.up?.isDown) {
-      this.player.setVelocityY(-250);
-      this.player.setScale(1, 1.02); // Растягиваем при движении вверх
-    } else if (this.cursors.down?.isDown) {
-      this.player.setVelocityY(250);
-      this.player.setScale(1, 0.98); // Сжимаем при движении вниз
+    if (this.cursors.up.isDown) {
+      this.player.setVelocityY(-250).setScale(1, 1.02);
+    } else if (this.cursors.down.isDown) {
+      this.player.setVelocityY(250).setScale(1, 0.98);
     } else {
-      this.player.setVelocityY(0);
-      this.player.setScale(1, 1); // Возвращаем нормальный размер
-    }
-
-    // Возврат угла при остановке
-    if (
-      !this.cursors.left?.isDown &&
-      !this.cursors.right?.isDown &&
-      !this.cursors.up?.isDown &&
-      !this.cursors.down?.isDown
-    ) {
-      this.player.setAngle(0);
-    }
-
-    // ===== СТРЕЛЬБА =====
-    if (this.spaceKey?.isDown && time > this.lastFired) {
-      this.fireBullet();
-      this.lastFired = time + 250; // Задержка между выстрелами 250 мс
+      this.player.setVelocityY(0).setScale(1, 1);
     }
   }
 
-  /**
-   * Создание и выстрел пули
-   */
-  /**
-   * Создание и выстрел пули
-   */
-  private fireBullet() {
-    const bullet = this.bullets.get(
-      this.player.x,
-      this.player.y - 20,
-      'bullet'
-    ) as Phaser.Physics.Arcade.Image;
-
-    if (bullet) {
-      bullet.setActive(true);
-      bullet.setVisible(true);
-      bullet.enableBody(true, this.player.x, this.player.y - 20, true, true); // Принудительно активируем физику
-
-      bullet.setVelocityY(-400); // Движение вверх
-      bullet.setScale(0.5); // Уменьшенный размер
-
-      // Чтобы избежать зависания пули внизу экрана
-      bullet.setCollideWorldBounds(false);
-      bullet.setGravityY(0);
-    }
-  }
-
-  /**
-   * Создание нового врага
-   */
-  private spawnEnemy() {
-    const x = Phaser.Math.Between(50, this.scale.width - 50); // Случайная позиция по X
-    const enemy = this.enemies.create(x, -50, 'enemy') as Phaser.Physics.Arcade.Sprite;
-    enemy.setVelocityY(100); // Движение вниз
-    enemy.setScale(0.8); // Уменьшенный размер
-  }
-
-  /**
-   * Обновление игрового времени
-   */
   private updateTime() {
     this.timeElapsed++;
     const minutes = Math.floor(this.timeElapsed / 60);
@@ -263,27 +225,36 @@ export default class MainScene extends Phaser.Scene {
     );
   }
 
-  /**
-   * Обновление счета игрока
-   */
   private updateScore() {
     this.score++;
     if (this.score > this.bestScore) {
       this.bestScore = this.score;
-      this.bestScoreText.setText(`Лучший результат: ${this.bestScore}`);
-      localStorage.setItem('bestScore', this.bestScore.toString()); // Сохраняем в localStorage
+      this.bestScoreText.setText(`Лучший: ${this.bestScore}`);
     }
     this.scoreText.setText(`Результат: ${this.score}`);
   }
 
-  /**
-   * Очистка при завершении сцены
-   */
+  private gameOver() {
+    localStorage.setItem('bestScore', this.bestScore.toString());
+
+    // Остановка всех звуков
+    this.sound.stopAll();
+
+    // Удаление всех анимаций (исправленная строка)
+    this.anims.destroy();
+
+    // Переход на сцену Game Over с передачей данных
+    this.scene.start('GameOverScene', {
+      score: this.score,
+      playerName: this.playerName,
+      bestScore: this.bestScore
+    });
+  }
+
   shutdown() {
-    // Удаляем текстовые элементы
-    this.playerNameText.destroy();
-    this.scoreText.destroy();
-    this.bestScoreText.destroy();
-    this.timeText.destroy();
+    [this.playerNameText, this.scoreText, this.bestScoreText, this.timeText].forEach(text =>
+      text.destroy()
+    );
+    this.blackHole.destroy();
   }
 }
