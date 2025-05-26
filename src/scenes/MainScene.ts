@@ -2,13 +2,13 @@ import Phaser from 'phaser';
 import { fireBullet } from '../entities/Bullet';
 import { spawnEnemy } from '../entities/Enemy';
 import { spawnAsteroid } from '../entities/Asteroid';
-import { BlackHole } from '../entities/BlackHole';
+import { BlackHoleSprite } from '../entities/BlackHole';
 
 export default class MainScene extends Phaser.Scene {
   private backgroundFar!: Phaser.GameObjects.TileSprite;
   private backgroundNear!: Phaser.GameObjects.TileSprite;
   private player!: Phaser.Physics.Arcade.Sprite;
-  private blackHole!: BlackHole;
+  private blackHole!: BlackHoleSprite;
 
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private spaceKey!: Phaser.Input.Keyboard.Key;
@@ -91,7 +91,7 @@ export default class MainScene extends Phaser.Scene {
     this.asteroids = this.physics.add.group();
 
     // Черная дыра
-    this.blackHole = new BlackHole(this, width / 2, height / 2);
+    this.blackHole = new BlackHoleSprite(this, width / 2, height / 2);
 
     // Спавн врагов
     this.time.addEvent({

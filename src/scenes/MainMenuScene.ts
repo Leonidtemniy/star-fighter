@@ -141,9 +141,15 @@ export default class MainMenuScene extends Phaser.Scene {
       const data = await response.json();
       console.log('Получен рейтинг:', data);
 
-      // здесь можешь вывести данные на экран
+      // Сохраняем полученные данные
+      this.leaderboardData = data;
+
+      // Обновляем отображение рейтинга
+      this.updateLeaderboard();
     } catch (error) {
       console.error('Ошибка загрузки рейтинга:', error);
+      // В случае ошибки показываем сообщение об ошибке
+      this.leaderboardText.setText('Ошибка загрузки\nрейтинга');
     }
   }
 
@@ -157,11 +163,24 @@ export default class MainMenuScene extends Phaser.Scene {
     const sorted = [...this.leaderboardData].sort((a, b) => b.score - a.score);
 
     sorted.slice(0, 5).forEach((player, index) => {
-      const medal = ['🥇', '🥈', '🥉'][index] || '▫️';
-      leaderboardString += `${medal} ${player.name}: [color=#00ff00]${player.score}[/color]\n`;
+      // Добавляем отступы для выравнивания
+      const namePadding = ' '.repeat(15 - player.name.length);
+      const scorePadding = ' '.repeat(5 - player.score.toString().length);
+
+      leaderboardString += `${index + 1}. ${player.name}${namePadding}: ${
+        player.score
+      }${scorePadding}\n`;
     });
 
+    // Обновляем текст с учетом форматирования
     this.leaderboardText.setText(leaderboardString);
+    this.leaderboardText.setStyle({
+      wordWrap: { width: 280 },
+      lineSpacing: 3,
+      fontSize: '15px',
+      color: '#ffffff',
+      align: 'left'
+    });
   }
 
   update() {

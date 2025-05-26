@@ -28,13 +28,13 @@ export function spawnAsteroid(scene: Phaser.Scene, group: Phaser.Physics.Arcade.
   const asteroid = group.create(x, y, 'asteroid') as Phaser.Physics.Arcade.Sprite;
 
   // 3. Рандомный размер (от 0.5 до 1.2)
-  const scale = Phaser.Math.FloatBetween(0.5, 1.2);
+  const scale = Phaser.Math.FloatBetween(0.2, 0.7);
   asteroid.setScale(scale);
 
   // 4. Рандомная скорость и направление (летит к центру экрана)
   const targetX = scene.scale.width / 2;
   const targetY = scene.scale.height / 2;
-  const speed = Phaser.Math.Between(100, 250);
+  const speed = Phaser.Math.Between(250, 550);
 
   // Угол между астероидом и центром экрана
   const angle = Phaser.Math.Angle.Between(x, y, targetX, targetY);
@@ -43,11 +43,16 @@ export function spawnAsteroid(scene: Phaser.Scene, group: Phaser.Physics.Arcade.
   asteroid.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
 
   // 5. Рандомное вращение
-  asteroid.setAngularVelocity(Phaser.Math.Between(-100, 100));
+  asteroid.setAngularVelocity(Phaser.Math.Between(-200, 200));
 
   // 6. Физика (круглый хитбокс)
-  asteroid.setCircle(asteroid.width / 2);
+  const bodyRadius = asteroid.width * 0.5 * 0.6; // 60% от половины ширины
+  asteroid.setCircle(
+    bodyRadius,
+    asteroid.displayWidth / 2 - bodyRadius,
+    asteroid.displayHeight / 2 - bodyRadius
+  );
 
   // 7. Дополнительно: лёгкое искривление траектории
-  asteroid.setAcceleration(Phaser.Math.Between(-50, 50), Phaser.Math.Between(-50, 50));
+  asteroid.setAcceleration(Phaser.Math.Between(-30, 30), Phaser.Math.Between(-30, 30));
 }
