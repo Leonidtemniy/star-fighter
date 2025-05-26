@@ -1,31 +1,35 @@
 import Phaser from 'phaser';
 import globals from '../globals';
 
+// Интерфейс звезды с дополнительным полем скорости
 interface StarGraphic extends Phaser.GameObjects.Graphics {
   speed: number;
 }
 
+// Главная сцена меню
 export default class MainMenuScene extends Phaser.Scene {
-  private playerNameInput!: HTMLInputElement;
-  private startButton!: Phaser.GameObjects.Text;
-  private stars: StarGraphic[] = [];
-  private maxStars = 100;
-  private leaderboardText!: Phaser.GameObjects.Text;
-  private leaderboardData: Array<{ name: string; score: number }> = [];
+  private playerNameInput!: HTMLInputElement; // HTML поле ввода имени
+  private startButton!: Phaser.GameObjects.Text; // Кнопка "Старт"
+  private stars: StarGraphic[] = []; // Массив звёзд
+  private maxStars = 100; // Максимальное количество звёзд
+  private leaderboardText!: Phaser.GameObjects.Text; // Текстовое поле для рейтинга
+  private leaderboardData: Array<{ name: string; score: number }> = []; // Данные рейтинга
 
   constructor() {
-    super('MainMenuScene');
+    super('MainMenuScene'); // Название сцены
   }
 
   preload() {
+    // Загрузка фоновой музыки
     this.load.audio('backgroundMusic', 'assets/audio/music.mp3');
+    // Инициализация аудиоконтекста при первом клике
     this.input.once('pointerdown', this.initAudioContext, this);
   }
 
   create() {
     const { width, height } = this.scale;
 
-    // --- ЗВЁЗДЫ ---
+    // --- СОЗДАНИЕ ЗВЁЗД НА ЗАДНЕМ ФОНЕ ---
     for (let i = 0; i < this.maxStars; i++) {
       const x = Phaser.Math.Between(0, width);
       const y = Phaser.Math.Between(0, height);
@@ -41,7 +45,7 @@ export default class MainMenuScene extends Phaser.Scene {
       this.stars.push(star);
     }
 
-    // --- МУЗЫКА ---
+    // --- ВКЛЮЧАЕМ ФОНОВУЮ МУЗЫКУ ---
     if (!globals.backgroundMusic) {
       globals.backgroundMusic = this.sound.add('backgroundMusic', {
         loop: true,
@@ -49,9 +53,9 @@ export default class MainMenuScene extends Phaser.Scene {
       });
       globals.backgroundMusic.play();
     }
-    this.sound.pauseOnBlur = false;
+    this.sound.pauseOnBlur = false; // Не останавливать музыку при потере фокуса окна
 
-    // --- ЗАГОЛОВОК ---
+    // --- ТЕКСТ ЗАГОЛОВКА ИГРЫ ---
     this.add
       .text(width / 2, 100, 'STAR FIGHTER', {
         fontSize: '48px',
@@ -67,14 +71,14 @@ export default class MainMenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // --- HTML input ---
+    // --- HTML ПОЛЕ ВВОДА ИМЕНИ ИГРОКА ---
     this.playerNameInput = document.createElement('input');
     this.playerNameInput.type = 'text';
     this.playerNameInput.placeholder = 'Ваше имя';
     this.playerNameInput.className = 'player-name-input';
     document.body.appendChild(this.playerNameInput);
 
-    // --- КНОПКА СТАРТА ---
+    // --- КНОПКА "СТАРТ" ДЛЯ НАЧАЛА ИГРЫ ---
     this.startButton = this.add
       .text(width / 2, height / 2 + 50, 'СТАРТ', {
         fontSize: '28px',
@@ -91,22 +95,24 @@ export default class MainMenuScene extends Phaser.Scene {
           return;
         }
 
+        // Удаляем поле ввода и запускаем основную сцену
         document.body.removeChild(this.playerNameInput);
         this.scene.start('MainScene', { playerName });
       });
 
-    // --- ТАБЛИЦА ЛИДЕРОВ ---
+    // --- СОЗДАНИЕ И ЗАГРУЗКА РЕЙТИНГА ИГРОКОВ ---
     this.createLeaderboard();
     this.loadLeaderboard();
   }
 
+  // Метод для создания элементов рейтинга (заголовок, фон, текст)
   private createLeaderboard() {
     const { width } = this.scale;
 
-    // Фон для рейтинга
+    // Фоновый прямоугольник
     this.add.rectangle(width - 200, 160, 220, 160, 0x000000, 0.6).setOrigin(0.5, 0);
 
-    // Заголовок
+    // Заголовок таблицы лидеров
     this.add
       .text(width - 200, 130, 'ТОП ИГРОКОВ', {
         fontSize: '24px',
@@ -122,7 +128,7 @@ export default class MainMenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // Поле для вывода рейтинга
+    // Текст для отображения рейтинга
     this.leaderboardText = this.add
       .text(width - 200, 160, 'Загрузка...', {
         fontSize: '18px',
@@ -133,6 +139,7 @@ export default class MainMenuScene extends Phaser.Scene {
       .setOrigin(0.5, 0);
   }
 
+  // Асинхронная загрузка данных рейтинга с сервера
   async loadLeaderboard() {
     try {
       const response = await fetch('http://localhost:3001/leaderboard');
@@ -141,18 +148,15 @@ export default class MainMenuScene extends Phaser.Scene {
       const data = await response.json();
       console.log('Получен рейтинг:', data);
 
-      // Сохраняем полученные данные
-      this.leaderboardData = data;
-
-      // Обновляем отображение рейтинга
-      this.updateLeaderboard();
+      this.leaderboardData = data; // Сохраняем данные
+      this.updateLeaderboard(); // Отображаем
     } catch (error) {
       console.error('Ошибка загрузки рейтинга:', error);
-      // В случае ошибки показываем сообщение об ошибке
       this.leaderboardText.setText('Ошибка загрузки\nрейтинга');
     }
   }
 
+  // Обновление текстового отображения рейтинга
   private updateLeaderboard() {
     if (this.leaderboardData.length === 0) {
       this.leaderboardText.setText('Нет данных\nо рейтинге');
@@ -163,7 +167,6 @@ export default class MainMenuScene extends Phaser.Scene {
     const sorted = [...this.leaderboardData].sort((a, b) => b.score - a.score);
 
     sorted.slice(0, 5).forEach((player, index) => {
-      // Добавляем отступы для выравнивания
       const namePadding = ' '.repeat(15 - player.name.length);
       const scorePadding = ' '.repeat(5 - player.score.toString().length);
 
@@ -172,7 +175,7 @@ export default class MainMenuScene extends Phaser.Scene {
       }${scorePadding}\n`;
     });
 
-    // Обновляем текст с учетом форматирования
+    // Применяем стили и обновляем текст
     this.leaderboardText.setText(leaderboardString);
     this.leaderboardText.setStyle({
       wordWrap: { width: 280 },
@@ -183,6 +186,7 @@ export default class MainMenuScene extends Phaser.Scene {
     });
   }
 
+  // Обновление позиции звёзд (анимация движения вниз)
   update() {
     for (const star of this.stars) {
       star.y += star.speed;
@@ -193,6 +197,7 @@ export default class MainMenuScene extends Phaser.Scene {
     }
   }
 
+  // Инициализация WebAudio (требуется для некоторых браузеров)
   initAudioContext() {
     if (this.sound instanceof Phaser.Sound.WebAudioSoundManager) {
       if (this.sound.context.state === 'suspended') {
@@ -203,12 +208,14 @@ export default class MainMenuScene extends Phaser.Scene {
     }
   }
 
+  // Метод очистки HTML-элементов
   shutdown() {
     if (this.playerNameInput && this.playerNameInput.parentNode) {
       this.playerNameInput.parentNode.removeChild(this.playerNameInput);
     }
   }
 
+  // Метод уничтожения сцены (с вызовом shutdown)
   destroy() {
     this.shutdown();
   }
