@@ -66,12 +66,6 @@ export default class MainScene extends Phaser.Scene {
     this.load.image('enemy', 'assets/enemy.png');
     this.load.image('asteroid', 'assets/asteroid.png');
     this.load.image('blackhole', 'assets/blackhole.png');
-
-    // Используем одиночное изображение, поэтому спрайт-лист закомментирован
-    // this.load.spritesheet('blackhole', 'assets/blackhole.png', {
-    //   frameWidth: 10,
-    //   frameHeight: 10
-    // });
   }
 
   // Создание игровой сцены
